@@ -78,7 +78,7 @@ micBtn.addEventListener("click", () => {
   }
 });
 
-document.querySelectorAll(".intent-btn").forEach((btn) => {
+document.querySelectorAll(".chip").forEach((btn) => {
   btn.addEventListener("click", async () => {
     setStatus("Thinking...");
     try {

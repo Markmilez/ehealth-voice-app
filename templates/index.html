@@ -3,34 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>E-Health Voice Assistant</title>
+  <title>Kwaters — E-Health Voice Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
   <main class="app">
-    <header>
-      <h1>E-Health Voice Assistant</h1>
-      <select id="language">
-        <option value="lug">Luganda</option>
-        <option value="eng">English</option>
-        <option value="ach">Acholi</option>
-        <option value="teo">Ateso</option>
-        <option value="nyn">Runyankole</option>
-        <option value="lgg">Lugbara</option>
-      </select>
+
+    <header class="topbar">
+      <span class="brand">Kwaters</span>
+      <div class="lang-pill">
+        <select id="language" aria-label="Choose language">
+          <option value="lug">Luganda</option>
+          <option value="eng">English</option>
+          <option value="ach">Acholi</option>
+          <option value="teo">Ateso</option>
+          <option value="nyn">Runyankole</option>
+          <option value="lgg">Lugbara</option>
+        </select>
+      </div>
     </header>
 
-    <section class="mic-section">
-      <button id="mic-btn" class="mic-btn" aria-label="Tap to speak">
-        <span id="mic-icon">🎙️</span>
-      </button>
-      <p id="status-text">Tap and speak</p>
-    </section>
-
-    <section class="quick-intents">
-      {% for intent in intents %}
-      <button class="intent-btn" data-intent="{{ intent.id }}">{{ intent.label_en }}</button>
-      {% endfor %}
+    <section class="hero">
+      <h1>Ask about your health,<br>out loud.</h1>
+      <p class="hero-sub">Speak in Luganda or your language. Get an answer you can hear and read.</p>
     </section>
 
     <section id="result" class="result hidden">
@@ -38,6 +36,22 @@
       <p id="answer" class="answer"></p>
       <audio id="player" controls></audio>
     </section>
+
+    <section class="chips-row" aria-label="Common topics">
+      {% for intent in intents %}
+      <button class="chip" data-intent="{{ intent.id }}">{{ intent.label_en }}</button>
+      {% endfor %}
+    </section>
+
+    <section class="mic-section">
+      <div class="mic-wrap">
+        <button id="mic-btn" class="mic-btn" aria-label="Tap to speak">
+          <span id="mic-icon">🎙</span>
+        </button>
+      </div>
+      <p id="status-text">Tap and speak</p>
+    </section>
+
   </main>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
