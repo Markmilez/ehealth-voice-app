@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-Health Voice Assistant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>E-Health Voice Assistant</h1>
+      <select id="language">
+        <option value="lug">Luganda</option>
+        <option value="eng">English</option>
+        <option value="ach">Acholi</option>
+        <option value="teo">Ateso</option>
+        <option value="nyn">Runyankole</option>
+        <option value="lgg">Lugbara</option>
+      </select>
+    </header>
+
+    <section class="mic-section">
+      <button id="mic-btn" class="mic-btn" aria-label="Tap to speak">
+        <span id="mic-icon">🎙️</span>
+      </button>
+      <p id="status-text">Tap and speak</p>
+    </section>
+
+    <section class="quick-intents">
+      {% for intent in intents %}
+      <button class="intent-btn" data-intent="{{ intent.id }}">{{ intent.label_en }}</button>
+      {% endfor %}
+    </section>
+
+    <section id="result" class="result hidden">
+      <p id="transcript" class="transcript"></p>
+      <p id="answer" class="answer"></p>
+      <audio id="player" controls></audio>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

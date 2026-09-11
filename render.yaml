@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: ehealth-voice-app
+    env: docker
+    plan: free
+    envVars:
+      - key: SUNBIRD_API_KEY
+        sync: false   # set this manually in the Render dashboard, never commit it

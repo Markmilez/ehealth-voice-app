@@ -1,0 +1,38 @@
+[
+  {
+    "id": "malaria_treatment_info",
+    "label_en": "Malaria Treatment",
+    "label_lg": "Eddagala ly'Omusujja gw'Ensiri",
+    "keywords_en": ["malaria", "fever", "mosquito"],
+    "keywords_lg": ["omusujja", "ensiri", "kasukusuku"],
+    "answer_en": "Malaria is treated with ACT (Artemisinin-based Combination Therapy), available free at government health centres. See a health worker immediately if you have fever, chills, or headache, especially for children under five.",
+    "answer_lg": "Omusujja gw'ensiri gujjanjabibwa n'eddagala erya ACT, eriweebwa obwereere mu bifo by'obujjanjabi ebya gavumenti. Laba omusawo amangu bw'obeera n'omusujja, okukankana, oba omutwe oluvannyuma."
+  },
+  {
+    "id": "maternal_health",
+    "label_en": "Maternal Health",
+    "label_lg": "Obulamu bw'Abakyala Abali Embuto",
+    "keywords_en": ["pregnant", "pregnancy", "maternal", "antenatal"],
+    "keywords_lg": ["olubuto", "okuzaala", "embuto"],
+    "answer_en": "Pregnant women should attend at least 4 antenatal care visits at a health facility. Warning signs needing urgent care include heavy bleeding, severe headache, and reduced fetal movement.",
+    "answer_lg": "Abakyala abali embuto balina okugenda mu bujjanjabi obw'olubuto obwa wiiki (antenatal) emirundi ennya nga tebannazaala. Bw'oba olina omusaayi omungi, omutwe ogw'amaanyi, oba omwana teyeetambuza, genda mangu mu ddwaliro."
+  },
+  {
+    "id": "immunization",
+    "label_en": "Immunization",
+    "label_lg": "Okwekanga Endwadde",
+    "keywords_en": ["vaccine", "vaccination", "immunization", "immunisation"],
+    "keywords_lg": ["akasago", "okwekanga"],
+    "answer_en": "Children should receive vaccines according to the Uganda immunization schedule, starting at birth (BCG, OPV) through 18 months. Vaccines are free at all government health facilities.",
+    "answer_lg": "Abaana balina okuweebwa akasago okusinziira ku puloguramu ya Uganda okuva lwe bazaalibwa (BCG, OPV) okutuuka ku myezi 18. Obukasa buweebwa obwereere mu ddwaliro lyonna erya gavumenti."
+  },
+  {
+    "id": "nearest_facility",
+    "label_en": "Nearest Clinic",
+    "label_lg": "Ekkiriso ky'obujjanjabi ekisemberayo",
+    "keywords_en": ["clinic", "hospital", "facility", "health centre", "health center"],
+    "keywords_lg": ["ddwaliro", "ekkiriso"],
+    "answer_en": "The nearest government health facility can be found using the Ministry of Health facility locator, or by asking your local Village Health Team member.",
+    "answer_lg": "Ddwaliro erisembera eritongole mu gavumenti oyinza okuliraba nga okozesa akasengejja k'ebifo by'obujjanjabi, oba nga obuuza omukugu wa Village Health Team ali okumpi naawe."
+  }
+]
