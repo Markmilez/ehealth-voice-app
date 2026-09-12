@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>History — E-Health</title>
+  <title>History — Kwaters</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
   <main class="app">
     <header class="topbar">
-      <span class="brand">E-Health</span>
+      <span class="brand">Kwaters</span>
       <a href="{{ url_for('index') }}" class="chip">Back</a>
     </header>
 
@@ -22,20 +22,32 @@
     </section>
 
     {% if entries %}
+      <section class="history-list">
       {% for e in entries %}
       <article class="history-item">
         <div class="history-meta">
-          <span class="history-mode">{{ e.mode }}</span>
-          <span class="history-date">{{ e.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+          <span class="history-badge history-badge-{{ e.mode }}">
+            {% if e.mode == 'voice' %}🎙 Voice{% else %}💬 Topic{% endif %}
+          </span>
+          <span class="history-date">{{ e.created_at.strftime('%d %b, %H:%M') }}</span>
         </div>
         {% if e.transcript %}
           <p class="transcript">"{{ e.transcript }}"</p>
         {% endif %}
         <p class="answer">{{ e.answer_text }}</p>
+        {% if e.answer_source %}
+          <span class="history-source">via {{ e.answer_source.replace('_', ' ') }}</span>
+        {% endif %}
       </article>
       {% endfor %}
+      </section>
     {% else %}
-      <p class="hero-sub">No questions yet — go ask something!</p>
+      <div class="empty-state">
+        <span class="empty-icon">🗒️</span>
+        <p class="empty-title">No questions yet</p>
+        <p class="hero-sub">Go back and ask something — voice or a topic button.</p>
+        <a href="{{ url_for('index') }}" class="control-btn start-btn empty-cta">Ask a question</a>
+      </div>
     {% endif %}
   </main>
 </body>

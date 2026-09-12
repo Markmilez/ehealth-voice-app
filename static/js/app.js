@@ -1,4 +1,6 @@
-const micBtn = document.getElementById("mic-btn");
+const startBtn = document.getElementById("start-btn");
+const stopBtn = document.getElementById("stop-btn");
+const micIndicator = document.getElementById("mic-indicator");
 const statusText = document.getElementById("status-text");
 const languageSelect = document.getElementById("language");
 const resultSection = document.getElementById("result");
@@ -12,6 +14,13 @@ let isRecording = false;
 
 function setStatus(text) {
   statusText.textContent = text;
+}
+
+function setRecordingUI(recording) {
+  isRecording = recording;
+  micIndicator.classList.toggle("recording", recording);
+  startBtn.disabled = recording;
+  stopBtn.disabled = !recording;
 }
 
 function showResult({ transcript, answer_text, audio_url, message }) {
@@ -35,17 +44,15 @@ async function startRecording() {
   mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
   mediaRecorder.onstop = onRecordingStop;
   mediaRecorder.start();
-  isRecording = true;
-  micBtn.classList.add("recording");
-  setStatus("Listening...");
+  setRecordingUI(true);
+  setStatus("Listening... press Stop when done");
 }
 
 function stopRecording() {
   if (mediaRecorder && isRecording) {
     mediaRecorder.stop();
     mediaRecorder.stream.getTracks().forEach((t) => t.stop());
-    isRecording = false;
-    micBtn.classList.remove("recording");
+    setRecordingUI(false);
   }
 }
 
@@ -59,7 +66,7 @@ async function onRecordingStop() {
   try {
     const resp = await fetch("/api/voice-query", { method: "POST", body: formData });
     const data = await resp.json();
-    setStatus("Tap and speak");
+    setStatus("Press Start and speak");
     showResult(data);
   } catch (err) {
     setStatus("Something went wrong. Try again.");
@@ -67,15 +74,15 @@ async function onRecordingStop() {
   }
 }
 
-micBtn.addEventListener("click", () => {
-  if (isRecording) {
-    stopRecording();
-  } else {
-    startRecording().catch((err) => {
-      setStatus("Microphone access denied or unavailable.");
-      console.error(err);
-    });
-  }
+startBtn.addEventListener("click", () => {
+  startRecording().catch((err) => {
+    setStatus("Microphone access denied or unavailable.");
+    console.error(err);
+  });
+});
+
+stopBtn.addEventListener("click", () => {
+  stopRecording();
 });
 
 document.querySelectorAll(".chip").forEach((btn) => {
@@ -91,7 +98,7 @@ document.querySelectorAll(".chip").forEach((btn) => {
         }),
       });
       const data = await resp.json();
-      setStatus("Tap and speak");
+      setStatus("Press Start and speak");
       showResult(data);
     } catch (err) {
       setStatus("Something went wrong. Try again.");

@@ -21,7 +21,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: 'Work Sans', -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: 'Nunito Sans', -apple-system, Segoe UI, Roboto, sans-serif;
   font-size: 17px;
   line-height: 1.5;
 }
@@ -63,9 +63,10 @@ body {
 }
 .logout-link:hover { text-decoration: underline; }
 .brand {
-  font-family: 'Fraunces', serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   font-size: 22px;
+  letter-spacing: -0.02em;
   color: var(--green-deep);
 }
 .lang-pill select {
@@ -75,7 +76,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 8px 32px 8px 16px;
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   font-size: 14px;
   font-weight: 500;
   color: var(--ink);
@@ -89,10 +90,11 @@ body {
 /* --- Hero --- */
 .hero { margin-bottom: 24px; }
 .hero h1 {
-  font-family: 'Fraunces', serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   font-size: 32px;
   line-height: 1.15;
+  letter-spacing: -0.02em;
   margin: 0 0 10px;
   color: var(--ink);
 }
@@ -141,7 +143,7 @@ audio { width: 100%; height: 36px; }
   border: 1px solid var(--line);
   background: transparent;
   color: var(--green-deep);
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -163,31 +165,65 @@ audio { width: 100%; height: 36px; }
 .mic-wrap {
   display: flex;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
-.mic-btn {
+.mic-indicator {
   width: 104px;
   height: 104px;
   border-radius: 50%;
-  border: none;
-  background: var(--green);
-  color: #fff;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  color: var(--green);
   font-size: 38px;
-  cursor: pointer;
-  box-shadow: 0 0 0 8px rgba(47, 107, 79, 0.12);
-  transition: transform 0.15s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
-.mic-btn:active { transform: scale(0.96); }
-.mic-btn.recording {
+.mic-indicator.recording {
   background: var(--brick);
-  box-shadow: 0 0 0 8px rgba(180, 72, 47, 0.15);
+  border-color: var(--brick);
+  color: #fff;
   animation: pulse 1.3s infinite;
 }
 @keyframes pulse {
-  0%   { box-shadow: 0 0 0 8px rgba(180, 72, 47, 0.15); }
+  0%   { box-shadow: 0 0 0 0 rgba(180, 72, 47, 0.35); }
   70%  { box-shadow: 0 0 0 22px rgba(180, 72, 47, 0); }
-  100% { box-shadow: 0 0 0 8px rgba(180, 72, 47, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(180, 72, 47, 0); }
 }
+.mic-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.control-btn {
+  min-width: 110px;
+  padding: 13px 28px;
+  border-radius: 999px;
+  border: none;
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+.control-btn:active { transform: scale(0.97); }
+.control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.start-btn {
+  background: var(--green);
+  color: #fff;
+}
+.start-btn:not(:disabled):hover { background: var(--green-deep); }
+.stop-btn {
+  background: transparent;
+  color: var(--brick);
+  border: 2px solid var(--brick);
+}
+.stop-btn:not(:disabled):hover { background: rgba(180, 72, 47, 0.08); }
 #status-text {
   margin: 0;
   color: var(--ink-soft);
@@ -202,7 +238,7 @@ button:focus-visible, select:focus-visible {
 
 /* --- Reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
-  .mic-btn.recording { animation: none; }
+  .mic-indicator.recording { animation: none; }
 }
 
 /* --- Auth pages (login/register) --- */
@@ -218,7 +254,7 @@ button:focus-visible, select:focus-visible {
   margin-top: 20vh;
 }
 .auth-title {
-  font-family: 'Fraunces', serif;
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   font-size: 24px;
   margin: 16px 0 20px;
@@ -240,7 +276,7 @@ button:focus-visible, select:focus-visible {
   border-radius: 6px;
   border: 1px solid var(--line);
   background: var(--paper);
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   font-size: 15px;
   color: var(--ink);
 }
@@ -255,7 +291,7 @@ button:focus-visible, select:focus-visible {
   border: none;
   background: var(--green);
   color: #fff;
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'Nunito Sans', sans-serif;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -277,18 +313,65 @@ button:focus-visible, select:focus-visible {
 }
 
 /* --- History page --- */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 .history-item {
   border-left: 3px solid var(--line);
   background: var(--panel);
-  padding: 14px 16px;
-  margin-bottom: 14px;
+  padding: 16px 18px;
   border-radius: 2px;
+  transition: border-color 0.15s ease;
 }
+.history-item:hover { border-left-color: var(--green); }
 .history-meta {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.history-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(47, 107, 79, 0.12);
+  color: var(--green-deep);
+}
+.history-badge-text { background: rgba(217, 164, 65, 0.18); color: #8a6414; }
+.history-date {
   font-size: 12px;
   color: var(--ink-soft);
-  margin-bottom: 8px;
-  text-transform: capitalize;
+}
+.history-source {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* --- Empty state --- */
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+}
+.empty-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 12px;
+}
+.empty-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.empty-cta {
+  display: inline-block;
+  margin-top: 20px;
+  text-decoration: none;
 }
