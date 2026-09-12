@@ -241,6 +241,74 @@ button:focus-visible, select:focus-visible {
   .mic-indicator.recording { animation: none; }
 }
 
+/* --- Nearby Health Facilities --- */
+.facilities-section {
+  margin-bottom: 32px;
+}
+.facilities-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.facilities-header h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--ink);
+}
+.facilities-find-btn {
+  min-width: auto;
+  padding: 8px 18px;
+  font-size: 13px;
+}
+.facilities-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.facility-card {
+  border-left: 3px solid var(--gold);
+  background: var(--panel);
+  padding: 12px 16px;
+  border-radius: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.facility-info { flex: 1; min-width: 0; }
+.facility-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  margin: 0 0 2px;
+}
+.facility-meta {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.facility-distance {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green-deep);
+  white-space: nowrap;
+}
+.facility-directions {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--green-deep);
+  text-decoration: none;
+  font-weight: 600;
+}
+.facility-directions:hover { text-decoration: underline; }
+
 /* --- Auth pages (login/register) --- */
 .auth-app {
   justify-content: center;

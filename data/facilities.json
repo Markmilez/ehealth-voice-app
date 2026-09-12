@@ -1,0 +1,66 @@
+[
+  {
+    "name": "Mulago National Referral Hospital",
+    "district": "Kampala",
+    "region": "Central",
+    "level": "National Referral Hospital",
+    "latitude": 0.337786,
+    "longitude": 32.575550
+  },
+  {
+    "name": "Entebbe General Hospital",
+    "district": "Wakiso (Entebbe)",
+    "region": "Central",
+    "level": "General Hospital",
+    "latitude": 0.063874,
+    "longitude": 32.471655
+  },
+  {
+    "name": "Jinja Regional Referral Hospital",
+    "district": "Jinja",
+    "region": "Eastern",
+    "level": "Regional Referral Hospital",
+    "latitude": 0.431111,
+    "longitude": 33.205000
+  },
+  {
+    "name": "Mbale Regional Referral Hospital",
+    "district": "Mbale",
+    "region": "Eastern",
+    "level": "Regional Referral Hospital",
+    "latitude": 1.076667,
+    "longitude": 34.176389
+  },
+  {
+    "name": "Mbarara Regional Referral Hospital",
+    "district": "Mbarara",
+    "region": "Western",
+    "level": "Regional Referral Hospital",
+    "latitude": -0.616389,
+    "longitude": 30.658889
+  },
+  {
+    "name": "Fort Portal Regional Referral Hospital",
+    "district": "Kabarole (Fort Portal)",
+    "region": "Western",
+    "level": "Regional Referral Hospital",
+    "latitude": 0.655278,
+    "longitude": 30.281389
+  },
+  {
+    "name": "Gulu Regional Referral Hospital",
+    "district": "Gulu",
+    "region": "Northern",
+    "level": "Regional Referral Hospital",
+    "latitude": 2.777778,
+    "longitude": 32.297778
+  },
+  {
+    "name": "Arua Regional Referral Hospital",
+    "district": "Arua",
+    "region": "West Nile / Northern",
+    "level": "Regional Referral Hospital",
+    "latitude": 3.019440,
+    "longitude": 30.912500
+  }
+]

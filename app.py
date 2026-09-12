@@ -16,6 +16,7 @@ Features:
 
 import json
 import logging
+import math
 import os
 import tempfile
 from datetime import datetime
@@ -326,6 +327,36 @@ except json.JSONDecodeError:
 except Exception:
     logger.exception("Failed to load intents database.")
     INTENTS = []
+
+
+# ---------------------------------------------------------------------------
+# Load local health facility directory (for "Nearest Clinic")
+# ---------------------------------------------------------------------------
+
+FACILITIES_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "data",
+    "facilities.json"
+)
+
+try:
+    with open(FACILITIES_PATH, "r", encoding="utf-8") as f:
+        FACILITIES = json.load(f)
+
+    if not isinstance(FACILITIES, list):
+        raise ValueError("facilities.json must contain a JSON list.")
+
+except FileNotFoundError:
+    logger.exception("Could not find facilities database: %s", FACILITIES_PATH)
+    FACILITIES = []
+
+except json.JSONDecodeError:
+    logger.exception("Invalid JSON in facilities database: %s", FACILITIES_PATH)
+    FACILITIES = []
+
+except Exception:
+    logger.exception("Failed to load facilities database.")
+    FACILITIES = []
 
 
 # ---------------------------------------------------------------------------
@@ -976,7 +1007,47 @@ def health():
         "sunbird_configured": bool(SUNBIRD_API_KEY),
         "sunbird_base_url": SUNBIRD_BASE_URL,
         "intent_count": len(INTENTS),
+        "facility_count": len(FACILITIES),
     })
+
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    """Great-circle distance between two lat/lng points, in kilometers."""
+    r = 6371.0  # Earth radius, km
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+@app.route("/api/facilities/nearby", methods=["GET"])
+@login_required
+def api_facilities_nearby():
+    try:
+        lat = float(request.args.get("lat"))
+        lng = float(request.args.get("lng"))
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "invalid_coordinates",
+            "message": "lat and lng query parameters are required and must be numbers."
+        }), 400
+
+    limit = request.args.get("limit", 5, type=int)
+    limit = max(1, min(limit, len(FACILITIES) or 1))
+
+    ranked = sorted(
+        (
+            {
+                **f,
+                "distance_km": round(haversine_km(lat, lng, f["latitude"], f["longitude"]), 1),
+            }
+            for f in FACILITIES
+        ),
+        key=lambda f: f["distance_km"],
+    )
+
+    return jsonify(ranked[:limit])
 
 
 @app.route("/api/text-query", methods=["POST"])

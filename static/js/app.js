@@ -12,6 +12,10 @@ const tagline2 = document.getElementById("tagline-2");
 const heroSub = document.getElementById("hero-sub");
 const historyLink = document.getElementById("history-link");
 const logoutLink = document.getElementById("logout-link");
+const facilitiesTitle = document.getElementById("facilities-title");
+const facilitiesHint = document.getElementById("facilities-hint");
+const findFacilitiesBtn = document.getElementById("find-facilities-btn");
+const facilitiesList = document.getElementById("facilities-list");
 
 let mediaRecorder;
 let chunks = [];
@@ -163,4 +167,66 @@ document.querySelectorAll(".chip").forEach((btn) => {
       console.error(err);
     }
   });
+});
+
+// --- Nearby Health Facilities ---
+
+function renderFacilities(facilities) {
+  facilitiesList.innerHTML = "";
+
+  if (!facilities.length) {
+    facilitiesList.innerHTML = `<p class="hero-sub">No facilities found.</p>`;
+    return;
+  }
+
+  facilities.forEach((f) => {
+    const card = document.createElement("div");
+    card.className = "facility-card";
+
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${f.latitude},${f.longitude}`;
+
+    card.innerHTML = `
+      <div class="facility-info">
+        <p class="facility-name">${f.name}</p>
+        <p class="facility-meta">${f.level} · ${f.district}</p>
+        <a class="facility-directions" href="${mapsUrl}" target="_blank" rel="noopener">Get directions</a>
+      </div>
+      <span class="facility-distance">${f.distance_km} km</span>
+    `;
+    facilitiesList.appendChild(card);
+  });
+}
+
+findFacilitiesBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    facilitiesHint.textContent = "Location isn't supported on this browser.";
+    return;
+  }
+
+  findFacilitiesBtn.disabled = true;
+  facilitiesHint.textContent = "Getting your location...";
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+      facilitiesHint.textContent = "Finding nearby facilities...";
+
+      try {
+        const resp = await fetch(`/api/facilities/nearby?lat=${latitude}&lng=${longitude}&limit=5`);
+        const facilities = await resp.json();
+        facilitiesHint.textContent = "Closest public hospitals, nearest first:";
+        renderFacilities(facilities);
+      } catch (err) {
+        facilitiesHint.textContent = "Couldn't load facilities. Try again.";
+        console.error(err);
+      } finally {
+        findFacilitiesBtn.disabled = false;
+      }
+    },
+    (err) => {
+      facilitiesHint.textContent = "Location access denied or unavailable.";
+      findFacilitiesBtn.disabled = false;
+      console.error(err);
+    }
+  );
 });
