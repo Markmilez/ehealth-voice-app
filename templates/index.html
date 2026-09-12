@@ -15,9 +15,9 @@
     <header class="topbar">
       <span class="brand">Kwaters</span>
       <div class="topbar-right">
-        <a href="{{ url_for('history_page') }}" class="chip">History</a>
+        <a href="{{ url_for('history_page') }}" class="chip" id="history-link">History</a>
         <span class="username">{{ username }}</span>
-        <a href="{{ url_for('logout') }}" class="logout-link">Log out</a>
+        <a href="{{ url_for('logout') }}" class="logout-link" id="logout-link">Log out</a>
         <div class="lang-pill">
           <select id="language" aria-label="Choose language">
             <option value="lug">Luganda</option>
@@ -32,8 +32,8 @@
     </header>
 
     <section class="hero">
-      <h1>Ask about your health,<br>out loud.</h1>
-      <p class="hero-sub">Speak in Luganda or your language. Get an answer you can hear and read.</p>
+      <h1><span id="tagline-1">Ask about your health,</span><br><span id="tagline-2">out loud.</span></h1>
+      <p class="hero-sub" id="hero-sub">Speak in your language. Get an answer you can hear and read.</p>
     </section>
 
     <section id="result" class="result hidden">

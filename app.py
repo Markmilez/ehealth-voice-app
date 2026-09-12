@@ -177,6 +177,134 @@ SUNFLOWER_MODEL = os.environ.get("SUNFLOWER_MODEL", "Sunbird/Sunflower-14B")
 
 
 # ---------------------------------------------------------------------------
+# UI localization — translates the site's own interface text (not just
+# health answers) into the selected language, via Sunbird AI's translate
+# endpoint. English is the source of truth; other languages are translated
+# on first request per language and cached in memory for the process
+# lifetime (fine for a prototype — restarts just re-translate once).
+# ---------------------------------------------------------------------------
+
+UI_STRINGS_EN = {
+    "tagline_line1": "Ask about your health,",
+    "tagline_line2": "out loud.",
+    "hero_sub": "Speak in your language. Get an answer you can hear and read.",
+    "history_link": "History",
+    "logout_link": "Log out",
+    "start_btn": "Start",
+    "stop_btn": "Stop",
+    "status_default": "Press Start and speak",
+    "status_listening": "Listening... press Stop when done",
+    "status_thinking": "Thinking...",
+    "status_mic_denied": "Microphone access denied or unavailable.",
+    "status_error": "Something went wrong. Try again.",
+}
+
+# language codes with no dedicated Sunbird translate support are left in
+# English rather than silently mistranslated.
+TRANSLATABLE_LANGUAGES = {"lug", "ach", "teo", "nyn", "lgg"}
+
+UI_STRINGS_CACHE = {}     # language -> {key: translated string}
+INTENT_LABEL_CACHE = {}   # language -> {intent_id: translated label}
+
+
+def translate_text(text, target_language, source_language="eng"):
+    """
+    Translate a short piece of text via Sunbird AI's translation endpoint.
+    """
+    validate_api_key()
+
+    url = f"{SUNBIRD_BASE_URL}/tasks/nllb_translate"
+    payload = {
+        "source_language": source_language,
+        "target_language": target_language,
+        "text": text,
+    }
+    headers = sunbird_headers(content_type="application/json")
+
+    response = requests.post(url, headers=headers, json=payload, timeout=(15, 30))
+
+    if not response.ok:
+        error = sunbird_error(response)
+        raise SunbirdAPIError(
+            "Sunbird translation request failed.",
+            status_code=response.status_code,
+            response_body=error["body"],
+            request_id=error["request_id"],
+        )
+
+    result = response.json()
+    # Handle both a flat shape and a nested {"output": {...}} shape.
+    output = result.get("output", result)
+    translated = output.get("translated_text")
+
+    if not translated:
+        raise SunbirdAPIError(
+            "Sunbird translation response missing translated_text.",
+            status_code=response.status_code,
+            response_body=result,
+        )
+
+    return translated
+
+
+def get_ui_strings(language):
+    """Return the UI string dictionary for the given language, translating
+    and caching on first use. Falls back to English per-string on any
+    translation failure so the UI never breaks."""
+
+    language = (language or "eng").lower().strip()
+
+    if language == "eng" or language not in TRANSLATABLE_LANGUAGES:
+        return UI_STRINGS_EN
+
+    if language in UI_STRINGS_CACHE:
+        return UI_STRINGS_CACHE[language]
+
+    translated = {}
+    for key, text in UI_STRINGS_EN.items():
+        try:
+            translated[key] = translate_text(text, language)
+        except Exception:
+            logger.exception(
+                "UI string translation failed key=%s language=%s", key, language
+            )
+            translated[key] = text
+
+    UI_STRINGS_CACHE[language] = translated
+    return translated
+
+
+def get_intent_labels(language):
+    """Return {intent_id: label} for the given language. Uses the curated
+    label_lg field for Luganda, translates for other supported languages,
+    and falls back to English on failure."""
+
+    language = (language or "eng").lower().strip()
+
+    if language == "eng" or language not in TRANSLATABLE_LANGUAGES:
+        return {i["id"]: i["label_en"] for i in INTENTS}
+
+    if language == "lug":
+        return {i["id"]: (i.get("label_lg") or i["label_en"]) for i in INTENTS}
+
+    if language in INTENT_LABEL_CACHE:
+        return INTENT_LABEL_CACHE[language]
+
+    labels = {}
+    for i in INTENTS:
+        try:
+            labels[i["id"]] = translate_text(i["label_en"], language)
+        except Exception:
+            logger.exception(
+                "Intent label translation failed id=%s language=%s", i["id"], language
+            )
+            labels[i["id"]] = i["label_en"]
+
+    INTENT_LABEL_CACHE[language] = labels
+    return labels
+
+
+# ---------------------------------------------------------------------------
 # Load local health-info / intent database
 # ---------------------------------------------------------------------------
 
@@ -894,14 +1022,24 @@ def api_history():
 @app.route("/api/intents", methods=["GET"])
 @login_required
 def api_intents():
+    language = request.args.get("language", "eng").lower().strip()
+    labels = get_intent_labels(language)
     return jsonify([
         {
             "id": intent.get("id"),
+            "label": labels.get(intent.get("id"), intent.get("label_en")),
             "label_en": intent.get("label_en"),
             "label_lg": intent.get("label_lg"),
         }
         for intent in INTENTS
     ])
+
+
+@app.route("/api/ui-strings", methods=["GET"])
+@login_required
+def api_ui_strings():
+    language = request.args.get("language", "eng").lower().strip()
+    return jsonify(get_ui_strings(language))
 
 
 @app.route("/api/languages", methods=["GET"])
