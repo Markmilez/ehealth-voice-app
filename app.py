@@ -105,7 +105,7 @@ class QueryHistory(db.Model):
     transcript = db.Column(db.Text)          # null for text-query (chip) entries
     intent_id = db.Column(db.String(80))     # set for chip queries / local fallback
     answer_text = db.Column(db.Text)
-    answer_source = db.Column(db.String(20))  # "sunflower", "local_fallback", "chip"
+    answer_source = db.Column(db.String(20))  # "local" (voice query) or "chip" (topic button)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -168,12 +168,6 @@ TTS_VOICES = {
     "swa": "salt_swa_0001",
     "eng": "salt_eng_0001",
 }
-
-# Sunflower chat model used to generate real answers to free-form
-# spoken health questions (as opposed to the fixed canned answers
-# used for the quick-topic chips). "Sunbird/Sunflower-9B" is a
-# lighter/faster alternative if 14B feels slow on the free tier.
-SUNFLOWER_MODEL = os.environ.get("SUNFLOWER_MODEL", "Sunbird/Sunflower-14B")
 
 
 # ---------------------------------------------------------------------------
@@ -716,124 +710,6 @@ def synthesize_speech(text, language="lug"):
 
 
 # ---------------------------------------------------------------------------
-# Sunbird Sunflower chat — generates a real answer to the spoken question,
-# instead of only matching against the local canned-answer database.
-# ---------------------------------------------------------------------------
-
-def generate_health_answer(transcript, language="lug"):
-    """
-    Send the transcribed question to Sunbird AI's Sunflower chat model
-    and return a generated answer in the same language.
-
-    Current endpoint:
-        POST /tasks/chat/completions   (OpenAI-compatible)
-    """
-
-    validate_api_key()
-
-    language = (language or "lug").lower().strip()
-    lang_name = SUPPORTED_STT_LANGUAGES.get(language, language)
-
-    system_prompt = (
-        "You are a calm, careful health information assistant for people in "
-        "Uganda, often used by voice. Give short, clear, general health "
-        "information only — never diagnose a specific condition. Always "
-        "encourage the person to visit a health worker or facility for "
-        "anything that sounds serious or urgent. "
-        f"Respond only in {lang_name}. Keep the answer under 120 words, in "
-        "plain, simple language suitable for reading aloud."
-    )
-
-    url = f"{SUNBIRD_BASE_URL}/tasks/chat/completions"
-
-    payload = {
-        "model": SUNFLOWER_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": transcript},
-        ],
-        "temperature": 0.3,
-    }
-
-    headers = sunbird_headers(content_type="application/json")
-
-    logger.info(
-        "Sending chat completion request to %s model=%s language=%s",
-        url,
-        SUNFLOWER_MODEL,
-        language
-    )
-
-    try:
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=(30, 120)
-        )
-
-        logger.info(
-            "Sunbird chat completion response: HTTP %s",
-            response.status_code
-        )
-
-        if not response.ok:
-            error = sunbird_error(response)
-
-            logger.error("Sunbird chat completion failed: %s", error)
-
-            raise SunbirdAPIError(
-                "Sunbird chat completion request failed.",
-                status_code=response.status_code,
-                response_body=error["body"],
-                request_id=error["request_id"]
-            )
-
-        try:
-            result = response.json()
-        except ValueError as exc:
-            raise SunbirdAPIError(
-                "Sunbird returned invalid chat completion JSON.",
-                status_code=response.status_code,
-                response_body=response.text
-            ) from exc
-
-        try:
-            answer_text = result["choices"][0]["message"]["content"].strip()
-        except (KeyError, IndexError, TypeError) as exc:
-            raise SunbirdAPIError(
-                "Unexpected chat completion response shape.",
-                status_code=response.status_code,
-                response_body=result
-            ) from exc
-
-        if not answer_text:
-            raise SunbirdAPIError(
-                "Sunbird chat completion returned an empty answer.",
-                status_code=response.status_code,
-                response_body=result
-            )
-
-        return answer_text
-
-    except requests.Timeout as exc:
-        logger.exception("Sunbird chat completion request timed out.")
-
-        raise SunbirdAPIError(
-            "Sunbird chat completion request timed out.",
-            status_code=504
-        ) from exc
-
-    except requests.ConnectionError as exc:
-        logger.exception("Could not connect to Sunbird chat completions.")
-
-        raise SunbirdAPIError(
-            "Could not connect to Sunbird chat completions.",
-            status_code=503
-        ) from exc
-
-
-# ---------------------------------------------------------------------------
 # Intent matching
 # ---------------------------------------------------------------------------
 
@@ -886,6 +762,48 @@ def build_answer(intent, language="lug"):
         return intent.get("answer_lg") or intent.get("answer_en")
 
     return intent.get("answer_en") or intent.get("answer_lg")
+
+
+ANSWER_TRANSLATION_CACHE = {}  # (language, intent_id) -> translated answer text
+
+
+def build_localized_answer(intent, language="lug"):
+    """
+    Return the canned answer for this intent in the requested language.
+    Luganda and English use the curated answer_lg/answer_en fields directly
+    (fast, no API call). Other supported languages translate the English
+    answer via Sunbird AI, cached per (language, intent) so repeat queries
+    for the same topic don't re-translate.
+    """
+
+    if not intent:
+        return None
+
+    language = (language or "lug").lower().strip()
+
+    if language in ("lug", "eng"):
+        return build_answer(intent, language)
+
+    if language not in TRANSLATABLE_LANGUAGES:
+        return intent.get("answer_en")
+
+    cache_key = (language, intent.get("id"))
+    if cache_key in ANSWER_TRANSLATION_CACHE:
+        return ANSWER_TRANSLATION_CACHE[cache_key]
+
+    english_answer = intent.get("answer_en")
+
+    try:
+        translated = translate_text(english_answer, language)
+    except Exception:
+        logger.exception(
+            "Answer translation failed intent=%s language=%s",
+            intent.get("id"), language
+        )
+        return english_answer
+
+    ANSWER_TRANSLATION_CACHE[cache_key] = translated
+    return translated
 
 
 # ---------------------------------------------------------------------------
@@ -1088,7 +1006,7 @@ def api_text_query():
                 "message": "No such intent."
             }), 404
 
-        answer_text = build_answer(intent, language)
+        answer_text = build_localized_answer(intent, language)
 
         if not answer_text:
             return jsonify({
@@ -1166,32 +1084,51 @@ def api_voice_query():
             "stt": stt_result,
         }), 200
 
-    # 2. Generate an answer via Sunbird's Sunflower chat model
-    answer_source = "sunflower"
-    intent = None
+    # 2. Match the transcript against the local intent database directly.
+    # Luganda and English match on their own keyword lists. Other supported
+    # languages are translated to English first (Sunbird AI), then matched
+    # on the English keyword list, since that's the language the intent
+    # database's keyword lists are richest in.
+    answer_source = "local"
+    match_text = transcript
 
-    try:
-        answer_text = generate_health_answer(transcript, language)
-    except Exception:
-        logger.exception(
-            "Sunflower answer generation failed — falling back to "
-            "local keyword-matched answer."
-        )
+    if language not in ("lug", "eng") and language in TRANSLATABLE_LANGUAGES:
+        try:
+            match_text = translate_text(transcript, "eng", source_language=language)
+        except Exception:
+            logger.exception(
+                "Transcript translation to English failed for language=%s "
+                "— matching on the raw transcript instead.",
+                language
+            )
+            match_text = transcript
 
-        intent = match_intent(transcript, language)
-        answer_text = build_answer(intent, language) if intent else None
-        answer_source = "local_fallback"
+    match_language = "eng" if language not in ("lug", "eng") else language
+    intent = match_intent(match_text, match_language)
 
-        if not answer_text:
-            return jsonify({
-                "error": "no_answer",
-                "message": (
-                    "Sorry, I couldn't find an answer to that. "
-                    "Please try again or choose a topic below."
-                ),
-                "transcript": transcript,
-                "stt": stt_result,
-            }), 200
+    if not intent:
+        return jsonify({
+            "error": "no_match",
+            "message": (
+                "Sorry, I didn't understand that. "
+                "Please try again or choose a topic below."
+            ),
+            "transcript": transcript,
+            "stt": stt_result,
+        }), 200
+
+    answer_text = build_localized_answer(intent, language)
+
+    if not answer_text:
+        return jsonify({
+            "error": "no_answer",
+            "message": (
+                "Sorry, I couldn't find an answer to that. "
+                "Please try again or choose a topic below."
+            ),
+            "transcript": transcript,
+            "stt": stt_result,
+        }), 200
 
     # 3. Text-to-speech
     try:
