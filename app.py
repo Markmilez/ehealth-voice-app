@@ -18,10 +18,17 @@ import json
 import logging
 import os
 import tempfile
+from datetime import datetime
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for, flash
+from flask_login import (
+    LoginManager, UserMixin, current_user,
+    login_required, login_user, logout_user
+)
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 from pydub import AudioSegment
 
 
@@ -36,9 +43,29 @@ SUNBIRD_BASE_URL = "https://api.sunbird.ai"
 
 app = Flask(__name__)
 
+# Session signing key — set SECRET_KEY in your .env for production.
+# Falls back to a dev-only default so local testing still works.
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-only-change-me")
+
+# Database: defaults to a local SQLite file for quick local testing.
+# For anything deployed (Render, etc.), set DATABASE_URL to a real
+# Postgres connection string (e.g. from Neon) so accounts/history
+# survive restarts and redeploys.
+db_url = os.environ.get("DATABASE_URL", "sqlite:///local.db")
+# Render/Heroku-style URLs sometimes start with postgres:// — SQLAlchemy needs postgresql://
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 # Maximum upload size accepted by this application.
 # Adjust if necessary.
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB
+
+db = SQLAlchemy(app)
+
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +78,58 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("sunbird-health-app")
+
+
+# ---------------------------------------------------------------------------
+# Database models
+# ---------------------------------------------------------------------------
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+class QueryHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    mode = db.Column(db.String(20))          # "voice" or "text"
+    language = db.Column(db.String(10))
+    transcript = db.Column(db.Text)          # null for text-query (chip) entries
+    intent_id = db.Column(db.String(80))     # set for chip queries / local fallback
+    answer_text = db.Column(db.Text)
+    answer_source = db.Column(db.String(20))  # "sunflower", "local_fallback", "chip"
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+
+def log_history(mode, language, answer_text, transcript=None,
+                 intent_id=None, answer_source=None):
+    """Save one query/answer pair to the current user's history."""
+    if not current_user.is_authenticated:
+        return
+    entry = QueryHistory(
+        user_id=current_user.id,
+        mode=mode,
+        language=language,
+        transcript=transcript,
+        intent_id=intent_id,
+        answer_text=answer_text,
+        answer_source=answer_source,
+    )
+    db.session.add(entry)
+    db.session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -708,11 +787,112 @@ def api_error_response(error, default_message="API request failed."):
 # ---------------------------------------------------------------------------
 
 @app.route("/")
+@login_required
 def index():
-    return render_template("index.html", intents=INTENTS)
+    return render_template("index.html", intents=INTENTS, username=current_user.username)
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+
+        if not username or not password:
+            flash("Username and password are required.")
+            return render_template("register.html")
+
+        if password != confirm:
+            flash("Passwords do not match.")
+            return render_template("register.html")
+
+        if User.query.filter_by(username=username).first():
+            flash("That username is already taken.")
+            return render_template("register.html")
+
+        user = User(username=username)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        login_user(user)
+        return redirect(url_for("index"))
+
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for("index"))
+
+        flash("Invalid username or password.")
+        return render_template("login.html")
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
+@app.route("/history")
+@login_required
+def history_page():
+    entries = (
+        QueryHistory.query
+        .filter_by(user_id=current_user.id)
+        .order_by(QueryHistory.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return render_template("history.html", entries=entries, username=current_user.username)
+
+
+@app.route("/api/history", methods=["GET"])
+@login_required
+def api_history():
+    entries = (
+        QueryHistory.query
+        .filter_by(user_id=current_user.id)
+        .order_by(QueryHistory.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return jsonify([
+        {
+            "id": e.id,
+            "mode": e.mode,
+            "language": e.language,
+            "transcript": e.transcript,
+            "intent_id": e.intent_id,
+            "answer_text": e.answer_text,
+            "answer_source": e.answer_source,
+            "created_at": e.created_at.isoformat() + "Z",
+        }
+        for e in entries
+    ])
 
 
 @app.route("/api/intents", methods=["GET"])
+@login_required
 def api_intents():
     return jsonify([
         {
@@ -725,6 +905,7 @@ def api_intents():
 
 
 @app.route("/api/languages", methods=["GET"])
+@login_required
 def api_languages():
     return jsonify({
         "stt": SUPPORTED_STT_LANGUAGES,
@@ -743,6 +924,7 @@ def health():
 
 
 @app.route("/api/text-query", methods=["POST"])
+@login_required
 def api_text_query():
 
     try:
@@ -781,6 +963,14 @@ def api_text_query():
         except Exception as exc:
             return api_error_response(exc, "Text-to-speech failed.")
 
+        log_history(
+            mode="text",
+            language=language,
+            answer_text=answer_text,
+            intent_id=intent.get("id"),
+            answer_source="chip",
+        )
+
         return jsonify({
             "intent": intent.get("id"),
             "answer_text": answer_text,
@@ -793,6 +983,7 @@ def api_text_query():
 
 
 @app.route("/api/voice-query", methods=["POST"])
+@login_required
 def api_voice_query():
 
     if "audio" not in request.files:
@@ -870,7 +1061,17 @@ def api_voice_query():
     except Exception as exc:
         return api_error_response(exc, "Text-to-speech failed.")
 
-    # 4. Final response
+    # 4. Save to the user's history
+    log_history(
+        mode="voice",
+        language=language,
+        transcript=transcript,
+        answer_text=answer_text,
+        intent_id=intent.get("id") if intent else None,
+        answer_source=answer_source,
+    )
+
+    # 5. Final response
     return jsonify({
         "transcript": transcript,
         "intent": intent.get("id") if intent else None,
@@ -901,6 +1102,10 @@ def handle_unexpected_error(error):
         "error": "internal_server_error",
         "message": "An unexpected server error occurred."
     }), 500
+
+
+with app.app_context():
+    db.create_all()
 
 
 if __name__ == "__main__":

@@ -6,3 +6,7 @@ services:
     envVars:
       - key: SUNBIRD_API_KEY
         sync: false   # set this manually in the Render dashboard, never commit it
+      - key: SECRET_KEY
+        sync: false   # set to a random string; used to sign login sessions
+      - key: DATABASE_URL
+        sync: false   # set to your Postgres connection string (e.g. from Neon) for persistent accounts/history

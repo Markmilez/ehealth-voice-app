@@ -13,16 +13,21 @@
   <main class="app">
 
     <header class="topbar">
-      <span class="brand">E-Health </span>
-      <div class="lang-pill">
-        <select id="language" aria-label="Choose language">
-          <option value="lug">Luganda</option>
-          <option value="eng">English</option>
-          <option value="ach">Acholi</option>
-          <option value="teo">Ateso</option>
-          <option value="nyn">Runyankole</option>
-          <option value="lgg">Lugbara</option>
-        </select>
+      <span class="brand">E-Health</span>
+      <div class="topbar-right">
+        <a href="{{ url_for('history_page') }}" class="chip">History</a>
+        <span class="username">{{ username }}</span>
+        <a href="{{ url_for('logout') }}" class="logout-link">Log out</a>
+        <div class="lang-pill">
+          <select id="language" aria-label="Choose language">
+            <option value="lug">Luganda</option>
+            <option value="eng">English</option>
+            <option value="ach">Acholi</option>
+            <option value="teo">Ateso</option>
+            <option value="nyn">Runyankole</option>
+            <option value="lgg">Lugbara</option>
+          </select>
+        </div>
       </div>
     </header>
 

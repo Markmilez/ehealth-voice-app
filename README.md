@@ -37,19 +37,44 @@ python app.py
 Then open http://localhost:5000 in your browser (Chrome or Edge recommended
 — they support the MediaRecorder API used for mic recording).
 
+## Accounts and history
+
+The app now requires a login. Visit `/register` to create an account, then
+`/login`. Every voice and quick-topic query is saved to that user's history,
+viewable at `/history`.
+
+**Database setup:**
+- **Local testing:** no setup needed — defaults to a local SQLite file
+  (`local.db`) in the project folder.
+- **Deployed (Render or similar):** set the `DATABASE_URL` environment
+  variable to a real Postgres connection string. Render's free web services
+  have an **ephemeral filesystem** — a local SQLite file gets wiped on every
+  restart or redeploy, so accounts/history would silently disappear without
+  a real database.
+  - **Neon** (neon.tech) has a genuinely permanent free Postgres tier — sign
+    up, create a project, copy the connection string into `DATABASE_URL`.
+  - Render's own free Postgres works too, but expires 30 days after
+    creation — fine for a short test, not for anything longer-term.
+- Also set `SECRET_KEY` to a random string in production (a default dev-only
+  value is used otherwise, which is not safe for real sessions) — one is
+  already pre-filled in `.env` for you.
+
 ## How it works
 
 1. **Quick intent buttons** (Malaria, Maternal Health, etc.) call
    `/api/text-query`, which looks up a pre-written answer and asks Sunbird AI's
-   `/tasks/tts` endpoint to speak it — no speech recognition involved. Good
+   TTS endpoint to speak it — no speech recognition involved. Good
    for demoing without a working mic.
 2. **Mic button** records audio in the browser, uploads it to
    `/api/voice-query`, which:
    - converts the recording to 16kHz mono WAV,
-   - sends it to Sunbird AI's `/tasks/stt` endpoint for transcription,
-   - matches the transcript against a small keyword-based intent list
-     (`data/intents.json`),
-   - sends the matched answer to `/tasks/tts` and returns the audio + text.
+   - sends it to Sunbird AI's STT endpoint for transcription,
+   - sends the transcript to Sunbird AI's Sunflower chat model to generate
+     a real answer (falling back to local keyword-matched answers if that
+     call fails),
+   - sends the answer to Sunbird AI's TTS endpoint and returns the audio + text.
+3. Every query (voice or quick-topic) is logged to the signed-in user's
+   history.
 
 ## Known limitations (by design, for a first prototype)
 

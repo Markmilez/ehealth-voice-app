@@ -40,8 +40,28 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 28px;
 }
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.username {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.logout-link {
+  font-size: 13px;
+  color: var(--brick);
+  text-decoration: none;
+  font-weight: 500;
+}
+.logout-link:hover { text-decoration: underline; }
 .brand {
   font-family: 'Fraunces', serif;
   font-weight: 600;
@@ -183,4 +203,92 @@ button:focus-visible, select:focus-visible {
 /* --- Reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
   .mic-btn.recording { animation: none; }
+}
+
+/* --- Auth pages (login/register) --- */
+.auth-app {
+  justify-content: center;
+  min-height: 100vh;
+}
+.auth-card {
+  background: var(--panel);
+  border-radius: 4px;
+  border-left: 3px solid var(--green);
+  padding: 32px 28px;
+  margin-top: 20vh;
+}
+.auth-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 24px;
+  margin: 16px 0 20px;
+  color: var(--ink);
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-form label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  margin-top: 10px;
+}
+.auth-form input {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font-family: 'Work Sans', sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+}
+.auth-form input:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.auth-btn {
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 999px;
+  border: none;
+  background: var(--green);
+  color: #fff;
+  font-family: 'Work Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.auth-btn:hover { background: var(--green-deep); }
+.auth-switch {
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.auth-switch a { color: var(--green-deep); font-weight: 500; }
+.flash {
+  background: rgba(180, 72, 47, 0.12);
+  color: var(--brick);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+/* --- History page --- */
+.history-item {
+  border-left: 3px solid var(--line);
+  background: var(--panel);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border-radius: 2px;
+}
+.history-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+  text-transform: capitalize;
 }
